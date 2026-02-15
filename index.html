@@ -552,6 +552,7 @@
 
         const game = new Game2048();
 
+        // 鍵盤操作
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
@@ -567,6 +568,43 @@
                 game.move('down');
             }
         });
+
+        // 觸摸滑動操作
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, false);
+
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // 設定滑動距離最小值，避免誤觸
+            const minSwipeDistance = 50;
+            
+            // 判斷滑動方向（優先判斷水平或垂直）
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                // 水平滑動
+                if (deltaX > 0) {
+                    game.move('right');
+                } else {
+                    game.move('left');
+                }
+            } else if (Math.abs(deltaY) > minSwipeDistance) {
+                // 垂直滑動
+                if (deltaY > 0) {
+                    game.move('down');
+                } else {
+                    game.move('up');
+                }
+            }
+        }, false);
     </script>
 </body>
 </html>
