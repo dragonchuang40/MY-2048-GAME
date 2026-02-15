@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .score-box, .best-box {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            min-width: 120px;
+        }
+
+        .score-box h3, .best-box h3 {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .score, .best {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .button-group {
+            margin-bottom: 20px;
+            gap: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 10px;
+            background: #bbada0;
+            padding: 10px;
+            border-radius: 5px;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+
+        .tile {
+            background: #cdc1b4;
+            border-radius: 3px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            color: #776e65;
+            transition: transform 0.2s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+        }
+
+        .tile.new {
+            animation: pop 0.15s ease-out;
+        }
+
+        .tile.merged {
+            animation: merge 0.15s ease-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes merge {
+            0% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes moveLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        @keyframes moveRight {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes moveUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100%); }
+        }
+
+        @keyframes moveDown {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100%); }
+        }
+
+        .tile[data-value="2"] { background: #eee4da; color: #776e65; }
+        .tile[data-value="4"] { background: #ede0c8; color: #776e65; }
+        .tile[data-value="8"] { background: #f2b179; color: #f9f6f2; }
+        .tile[data-value="16"] { background: #f59563; color: #f9f6f2; }
+        .tile[data-value="32"] { background: #f67c5f; color: #f9f6f2; }
+        .tile[data-value="64"] { background: #f65e3b; color: #f9f6f2; }
+        .tile[data-value="128"] { background: #edcf72; color: #095f6b; font-size: 30px; }
+        .tile[data-value="256"] { background: #edcc61; color: #095f6b; font-size: 30px; }
+        .tile[data-value="512"] { background: #edc850; color: #095f6b; font-size: 30px; }
+        .tile[data-value="1024"] { background: #edc53f; color: #095f6b; font-size: 25px; }
+        .tile[data-value="2048"] { background: #edc22e; color: #095f6b; font-size: 25px; }
+
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+
+        .game-over h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .game-over p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .game-over button {
+            background: #667eea;
+            padding: 15px 30px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>2048</h1>
+        <div class="info">
+            <div class="score-box">
+                <h3>Score</h3>
+                <div class="score">0</div>
+            </div>
+            <div class="best-box">
+                <h3>Best</h3>
+                <div class="best">0</div>
+            </div>
+        </div>
+        <div class="button-group">
+            <button onclick="game.newGame()">New Game</button>
+        </div>
+        <div class="game-board"></div>
+    </div>
+
+    <div class="game-over">
+        <h2 id="gameOverTitle">Game Over!</h2>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <button onclick="game.newGame()">Try Again</button>
+    </div>
+
+    <script>
+        class Game2048 {
+            constructor() {
+                this.board = Array(16).fill(0);
+                this.score = 0;
+                this.bestScore = parseInt(localStorage.getItem('best2048')) || 0;
+                this.isGameOver = false;
+                this.init();
+            }
+
+            init() {
+                this.board = Array(16).fill(0);
+                this.score = 0;
+                this.isGameOver = false;
+                this.addNewTile();
+                this.addNewTile();
+                this.render();
+                this.updateScore();
+                document.querySelector('.game-over').style.display = 'none';
+            }
+
+            newGame() {
+                this.init();
+            }
+
+            addNewTile() {
+                const emptyIndices = this.board
+                    .map((val, idx) => val === 0 ? idx : -1)
+                    .filter(idx => idx !== -1);
+
+                if (emptyIndices.length === 0) return;
+
+                const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                this.board[randomIndex] = Math.random() < 0.9 ? 2 : 4;
+            }
+
+            render() {
+                const gameBoard = document.querySelector('.game-board');
+                gameBoard.innerHTML = '';
+
+                this.board.forEach((value, index) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    if (value !== 0) {
+                        tile.textContent = value;
+                        tile.setAttribute('data-value', value);
+                        tile.setAttribute('data-index', index);
+                    }
+                    gameBoard.appendChild(tile);
+                });
+            }
+
+            renderWithAnimation(oldBoard, direction) {
+                const gameBoard = document.querySelector('.game-board');
+                
+                // Track which old positions contributed to new positions
+                const movements = new Map(); // newIdx -> {fromIdx, isMerged}
+                const used = new Set();
+                
+                // Identify movements based on direction
+                for (let newIdx = 0; newIdx < 16; newIdx++) {
+                    if (this.board[newIdx] !== 0) {
+                        const newRow = Math.floor(newIdx / 4);
+                        const newCol = newIdx % 4;
+                        
+                        // Look for old position in same row/column
+                        let bestMatch = -1;
+                        let isMerged = false;
+                        
+                        if (direction === 'left' || direction === 'right') {
+                            // Search in same row
+                            for (let oldIdx = newRow * 4; oldIdx < newRow * 4 + 4; oldIdx++) {
+                                if (!used.has(oldIdx) && oldBoard[oldIdx] !== 0) {
+                                    if (this.board[newIdx] === oldBoard[oldIdx]) {
+                                        bestMatch = oldIdx;
+                                        break;
+                                    } else if (this.board[newIdx] === oldBoard[oldIdx] * 2) {
+                                        // This could be merged, continue searching for non-merged first
+                                        if (bestMatch === -1) {
+                                            bestMatch = oldIdx;
+                                            isMerged = true;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Search in same column
+                            for (let oldIdx = newCol; oldIdx < 16; oldIdx += 4) {
+                                if (!used.has(oldIdx) && oldBoard[oldIdx] !== 0) {
+                                    if (this.board[newIdx] === oldBoard[oldIdx]) {
+                                        bestMatch = oldIdx;
+                                        break;
+                                    } else if (this.board[newIdx] === oldBoard[oldIdx] * 2) {
+                                        // This could be merged
+                                        if (bestMatch === -1) {
+                                            bestMatch = oldIdx;
+                                            isMerged = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (bestMatch !== -1) {
+                            movements.set(newIdx, { fromIdx: bestMatch, isMerged });
+                            if (isMerged) {
+                                used.add(bestMatch);
+                                // Also mark the next matching tile as used (merged partner)
+                                if (direction === 'left' || direction === 'right') {
+                                    const newRow = Math.floor(newIdx / 4);
+                                    for (let oldIdx = newRow * 4; oldIdx < newRow * 4 + 4; oldIdx++) {
+                                        if (!used.has(oldIdx) && oldBoard[oldIdx] === oldBoard[bestMatch]) {
+                                            used.add(oldIdx);
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    const newCol = newIdx % 4;
+                                    for (let oldIdx = newCol; oldIdx < 16; oldIdx += 4) {
+                                        if (!used.has(oldIdx) && oldBoard[oldIdx] === oldBoard[bestMatch]) {
+                                            used.add(oldIdx);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Clear board
+                gameBoard.innerHTML = '';
+                
+                // Render all tiles with animation
+                this.board.forEach((value, index) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    
+                    if (value !== 0) {
+                        tile.textContent = value;
+                        tile.setAttribute('data-value', value);
+                        tile.setAttribute('data-index', index);
+                        
+                        const movement = movements.get(index);
+                        const isNewTile = oldBoard[index] === 0 && value !== 0 && !movement;
+                        const isMerged = oldBoard[index] !== 0 && oldBoard[index] * 2 === value;
+                        
+                        if (movement) {
+                            const fromIdx = movement.fromIdx;
+                            const fromRow = Math.floor(fromIdx / 4);
+                            const fromCol = fromIdx % 4;
+                            const toRow = Math.floor(index / 4);
+                            const toCol = index % 4;
+                            const rowDiff = toRow - fromRow;
+                            const colDiff = toCol - fromCol;
+                            
+                            // Set initial transform
+                            tile.style.transform = `translate(calc(${colDiff} * (100% + 10px)), calc(${rowDiff} * (100% + 10px)))`;
+                            
+                            // Force reflow
+                            void tile.offsetHeight;
+                            
+                            // Animate to final position
+                            tile.style.transition = 'transform 0.2s cubic-bezier(0.23, 1, 0.320, 1)';
+                            tile.style.transform = 'translate(0, 0)';
+                            
+                            // Add merged class if it's a merge
+                            if (movement.isMerged) {
+                                tile.classList.add('merged');
+                            }
+                        } else if (isNewTile) {
+                            tile.classList.add('new');
+                        }
+                    }
+                    gameBoard.appendChild(tile);
+                });
+            }
+
+            updateScore() {
+                document.querySelector('.score').textContent = this.score;
+                document.querySelector('.best').textContent = this.bestScore;
+            }
+
+            move(direction) {
+                if (this.isGameOver) return;
+
+                const oldBoard = [...this.board];
+                const before = JSON.stringify(this.board);
+                
+                if (direction === 'left') this.moveLeft();
+                else if (direction === 'right') this.moveRight();
+                else if (direction === 'up') this.moveUp();
+                else if (direction === 'down') this.moveDown();
+
+                const after = JSON.stringify(this.board);
+
+                if (before === after) return;
+
+                // Render with animations
+                this.renderWithAnimation(oldBoard, direction);
+                this.updateScore();
+
+                // Wait for animation to complete, then add new tile
+                setTimeout(() => {
+                    this.addNewTile();
+                    this.render();
+                    this.checkGameOver();
+                }, 200);
+            }
+
+            moveLeft() {
+                for (let i = 0; i < 4; i++) {
+                    this.compressRow(i * 4, i * 4 + 4);
+                    this.mergeRow(i * 4, i * 4 + 4);
+                    this.compressRow(i * 4, i * 4 + 4);
+                }
+            }
+
+            moveRight() {
+                for (let i = 0; i < 4; i++) {
+                    this.compressRow(i * 4 + 3, i * 4 - 1, -1);
+                    this.mergeRow(i * 4 + 3, i * 4 - 1, -1);
+                    this.compressRow(i * 4 + 3, i * 4 - 1, -1);
+                }
+            }
+
+            moveUp() {
+                for (let i = 0; i < 4; i++) {
+                    this.compressCol(i, i + 13, 4);
+                    this.mergeCol(i, i + 13, 4);
+                    this.compressCol(i, i + 13, 4);
+                }
+            }
+
+            moveDown() {
+                for (let i = 0; i < 4; i++) {
+                    this.compressCol(i + 12, i - 5, -4);
+                    this.mergeCol(i + 12, i - 5, -4);
+                    this.compressCol(i + 12, i - 5, -4);
+                }
+            }
+
+            compressRow(start, end, step = 1) {
+                const row = [];
+                for (let i = start; i !== end; i += step) {
+                    if (this.board[i] !== 0) row.push(this.board[i]);
+                }
+                for (let i = start; i !== end; i += step) {
+                    this.board[i] = 0;
+                }
+                row.forEach((val, idx) => {
+                    this.board[start + idx * step] = val;
+                });
+            }
+
+            mergeRow(start, end, step = 1) {
+                for (let i = start; i !== end - step; i += step) {
+                    if (this.board[i] !== 0 && this.board[i] === this.board[i + step]) {
+                        this.board[i] *= 2;
+                        this.score += this.board[i];
+                        this.board[i + step] = 0;
+
+                        if (this.board[i] === 2048) {
+                            this.isGameOver = true;
+                        }
+                    }
+                }
+            }
+
+            compressCol(start, end, step) {
+                const col = [];
+                // iterate exactly 4 cells in the column starting from `start`
+                for (let k = 0; k < 4; k++) {
+                    const i = start + k * step;
+                    if (i < 0 || i >= 16) continue;
+                    if (this.board[i] !== 0) col.push(this.board[i]);
+                }
+
+                for (let k = 0; k < 4; k++) {
+                    const i = start + k * step;
+                    if (i < 0 || i >= 16) continue;
+                    this.board[i] = 0;
+                }
+
+                col.forEach((val, idx) => {
+                    const i = start + idx * step;
+                    if (i < 0 || i >= 16) return;
+                    this.board[i] = val;
+                });
+            }
+
+            mergeCol(start, end, step) {
+                // iterate over the 4 cells in the column and merge adjacent equal tiles
+                for (let k = 0; k < 3; k++) {
+                    const i = start + k * step;
+                    const j = i + step;
+                    if (i < 0 || i >= 16 || j < 0 || j >= 16) continue;
+                    if (this.board[i] !== 0 && this.board[i] === this.board[j]) {
+                        this.board[i] *= 2;
+                        this.score += this.board[i];
+                        this.board[j] = 0;
+
+                        if (this.board[i] === 2048) {
+                            this.isGameOver = true;
+                        }
+                    }
+                }
+            }
+
+            canMove() {
+                for (let i = 0; i < 16; i++) {
+                    if (this.board[i] === 0) return true;
+                }
+                for (let i = 0; i < 16; i++) {
+                    const right = (i + 1) % 4 !== 0 ? this.board[i + 1] : null;
+                    const down = i < 12 ? this.board[i + 4] : null;
+                    if (this.board[i] === right || this.board[i] === down) return true;
+                }
+                return false;
+            }
+
+            checkGameOver() {
+                if (!this.canMove()) {
+                    if (this.score > this.bestScore) {
+                        this.bestScore = this.score;
+                        localStorage.setItem('best2048', this.bestScore);
+                    }
+                    document.querySelectorAll('.game-over').forEach(elem => {
+                        elem.style.display = 'block';
+                    });
+                    document.getElementById('finalScore').textContent = this.score;
+                    document.getElementById('gameOverTitle').textContent = 'Game Over!';
+                }
+            }
+        }
+
+        const game = new Game2048();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                game.move('left');
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                game.move('right');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                game.move('up');
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                game.move('down');
+            }
+        });
+    </script>
+</body>
+</html>
