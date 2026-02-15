@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JACK的2048</title>
+    <title>J~2048</title>
     <style>
         * {
             margin: 0;
@@ -163,6 +163,52 @@
         .tile[data-value="1024"] { background: #edc53f; color: #095f6b; font-size: 25px; }
         .tile[data-value="2048"] { background: #edc22e; color: #095f6b; font-size: 25px; }
 
+        .leaderboard {
+            margin-top: 20px;
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: left;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .leaderboard h3 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-rank {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 30px;
+        }
+
+        .leaderboard-score {
+            color: #333;
+            font-weight: bold;
+        }
+
         .game-over {
             position: fixed;
             top: 50%;
@@ -196,7 +242,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>JACK的2048</h1>
+        <h1>J~2048</h1>
         <div class="info">
             <div class="score-box">
                 <h3>Score</h3>
@@ -211,6 +257,11 @@
             <button onclick="game.newGame()">New Game</button>
         </div>
         <div class="game-board"></div>
+        <div class="leaderboard">
+            <h3>歷史最高分排行榜</h3>
+            <ul class="leaderboard-list" id="leaderboardList">
+            </ul>
+        </div>
     </div>
 
     <div class="game-over">
@@ -225,7 +276,9 @@
                 this.board = Array(16).fill(0);
                 this.score = 0;
                 this.bestScore = parseInt(localStorage.getItem('best2048')) || 0;
+                this.leaderboard = JSON.parse(localStorage.getItem('leaderboard2048')) || [];
                 this.isGameOver = false;
+                this.updateLeaderboard();
                 this.init();
             }
 
@@ -402,6 +455,34 @@
                 document.querySelector('.best').textContent = this.bestScore;
             }
 
+            updateLeaderboard() {
+                const leaderboardList = document.getElementById('leaderboardList');
+                leaderboardList.innerHTML = '';
+                
+                // 排序排行榜（降序）
+                const sortedScores = [...this.leaderboard].sort((a, b) => b - a).slice(0, 10);
+                
+                if (sortedScores.length === 0) {
+                    leaderboardList.innerHTML = '<li class="leaderboard-item"><span>暫無紀錄</span></li>';
+                    return;
+                }
+                
+                sortedScores.forEach((score, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'leaderboard-item';
+                    li.innerHTML = `<span class="leaderboard-rank">#${index + 1}</span><span class="leaderboard-score">${score}</span>`;
+                    leaderboardList.appendChild(li);
+                });
+            }
+
+            addToLeaderboard(score) {
+                if (score > 0) {
+                    this.leaderboard.push(score);
+                    localStorage.setItem('leaderboard2048', JSON.stringify(this.leaderboard));
+                    this.updateLeaderboard();
+                }
+            }
+
             move(direction) {
                 if (this.isGameOver) return;
 
@@ -546,6 +627,8 @@
                         this.bestScore = this.score;
                         localStorage.setItem('best2048', this.bestScore);
                     }
+                    // 添加分數到排行榜
+                    this.addToLeaderboard(this.score);
                     document.querySelectorAll('.game-over').forEach(elem => {
                         elem.style.display = 'block';
                     });
