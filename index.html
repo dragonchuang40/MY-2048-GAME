@@ -18,6 +18,8 @@
             align-items: center;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            touch-action: none;
+            overflow: hidden;
         }
 
         .container {
@@ -576,9 +578,12 @@
         document.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
+            e.preventDefault();
         }, false);
 
         document.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
             const touchEndX = e.changedTouches[0].clientX;
             const touchEndY = e.changedTouches[0].clientY;
             
